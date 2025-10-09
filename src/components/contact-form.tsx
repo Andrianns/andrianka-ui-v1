@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
-import { DEFAULT_SETTINGS } from '@/lib/cms'
+import { DEFAULT_API_URL, DEFAULT_SETTINGS } from '@/lib/cms'
 
 type ContactFormProps = {
   apiUrl?: string
@@ -21,7 +21,7 @@ export default function ContactForm({ apiUrl }: ContactFormProps) {
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle')
 
   const endpoint = useMemo(() => {
-    const base = (apiUrl || DEFAULT_SETTINGS.apiUrl || '').replace(/\/$/, '')
+    const base = (apiUrl || DEFAULT_API_URL || '').replace(/\/$/, '')
     if (!base) return null
     return `${base}/contact/messages`
   }, [apiUrl])

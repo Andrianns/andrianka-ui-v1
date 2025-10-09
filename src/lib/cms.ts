@@ -254,31 +254,68 @@ export const DEFAULT_CONTENT: CmsContent = {
   },
 }
 
+const resolveDefaultApiUrl = () => {
+  const configured = import.meta.env?.VITE_CMS_API_URL?.trim()
+  if (configured) return configured
+  if (import.meta.env?.PROD) {
+    return "https://andrian-be-services-v1.vercel.app/api"
+  }
+  return "http://localhost:3000/api"
+}
+
+export const DEFAULT_API_URL = resolveDefaultApiUrl()
+
 export const DEFAULT_SETTINGS: CmsSettings = {
-  apiUrl: import.meta.env?.VITE_CMS_API_URL ?? "http://localhost:3000/api",
+  apiUrl: DEFAULT_API_URL,
   cmsUrl: import.meta.env?.VITE_CMS_DASHBOARD_URL ?? "http://localhost:5174/dashboard",
   loginUrl: import.meta.env?.VITE_CMS_LOGIN_URL ?? "http://localhost:5174/login",
   notificationDuration: Number.parseInt(import.meta.env?.VITE_CMS_NOTIFICATION_DURATION ?? "1500", 10) || 1500,
 }
 
-const API_BASE = import.meta.env?.VITE_CMS_API_URL ?? "http://localhost:3000/api"
+const API_BASE = DEFAULT_API_URL
 const SETTINGS_EVENT = "cms:settings-updated"
 
+const stripQueryAndHash = (value: string) => value.split(/[?#]/)[0]
+const ensureLeadingSlash = (value: string) => (value.startsWith('/') ? value : `/${value}`)
+const isAbsoluteUrl = (value: string) => /^https?:\/\//i.test(value) || value.startsWith('data:')
+
 export function resolveMediaUrl(media?: MediaResource | null, fallback?: string): string | undefined {
+  const fallbackUrl = fallback?.trim()
+
   if (!media?.url) {
-    return fallback
+    return fallbackUrl
   }
 
-  if (/^https?:\/\//i.test(media.url)) {
-    return media.url
+  const mediaUrl = media.url.trim()
+  if (!mediaUrl) {
+    return fallbackUrl
   }
 
-  const trimmedBase = API_BASE.replace(/\/$/, "")
-  const normalizedBase = media.url.startsWith("/api/") && trimmedBase.endsWith("/api")
-    ? trimmedBase.slice(0, -4)
-    : trimmedBase
-  const path = media.url.startsWith("/") ? media.url : `/${media.url}`
-  return `${normalizedBase}${path}`
+  if (isAbsoluteUrl(mediaUrl)) {
+    return mediaUrl
+  }
+
+  const normalizedMediaPath = ensureLeadingSlash(stripQueryAndHash(mediaUrl))
+
+  if (fallbackUrl) {
+    if (isAbsoluteUrl(fallbackUrl)) {
+      const fallbackPath = stripQueryAndHash(fallbackUrl)
+      if (fallbackPath.endsWith(normalizedMediaPath)) {
+        return fallbackUrl
+      }
+    } else {
+      const normalizedFallbackPath = ensureLeadingSlash(stripQueryAndHash(fallbackUrl))
+      if (normalizedFallbackPath === normalizedMediaPath) {
+        return fallbackUrl
+      }
+    }
+  }
+
+  const trimmedBase = API_BASE.replace(/\/$/, '')
+  const shouldStripApi = normalizedMediaPath.startsWith('/api/') && trimmedBase.endsWith('/api')
+  const normalizedBase = shouldStripApi ? trimmedBase.slice(0, -4) : trimmedBase
+
+  return `${normalizedBase}${normalizedMediaPath}`
 }
 
 async function request<T>(path: string): Promise<T> {
