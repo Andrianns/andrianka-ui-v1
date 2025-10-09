@@ -1,4 +1,4 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
@@ -16,6 +16,15 @@ import { useCmsContent } from "@/hooks/use-cms-content"
 import { useCmsSettings } from "@/hooks/use-cms-settings"
 import { motion } from "framer-motion"
 import { resolveMediaUrl } from "@/lib/cms"
+import { GamesSectionSkeleton, PortfolioSectionSkeleton } from "@/components/section-skeletons"
+
+const FUNNY_MESSAGES = [
+  "Masih loading... kayak pull request yang nunggu di-approve 💤",
+  "Ngopi dulu aja, Vercel-nya lagi mikir 🤔",
+  "Tenang, backend-nya lagi bangun dari tidur siang ☕",
+  "Ini bukan bug, ini fitur ‘slow suspense’ 🎭",
+  "Server-nya lagi jalan kaki dari Amerika ke Indonesia 🛫",
+]
 
 function App() {
   const navigate = useNavigate()
@@ -23,12 +32,40 @@ function App() {
   const { settings, isLoading: isSettingsLoading, error: settingsError } = useCmsSettings()
   const isLoading = isContentLoading || isSettingsLoading
   const { hero, about, experience, utilities, portfolio, contact } = content
+  const [funnyMessageIndex, setFunnyMessageIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (!isSettingsLoading && settingsError) {
       navigate("/service-down", { replace: true, state: { reason: settingsError.message } })
     }
   }, [isSettingsLoading, settingsError, navigate])
+
+  useEffect(() => {
+    if (!isLoading) {
+      setFunnyMessageIndex(null)
+      return
+    }
+
+    let intervalId: number | undefined
+    const timeoutId = window.setTimeout(() => {
+      setFunnyMessageIndex(0)
+      intervalId = window.setInterval(() => {
+        setFunnyMessageIndex((prev) => {
+          if (prev === null) return 0
+          return (prev + 1) % FUNNY_MESSAGES.length
+        })
+      }, 4000)
+    }, 5000)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+      if (intervalId) {
+        window.clearInterval(intervalId)
+      }
+    }
+  }, [isLoading])
+
+  const funnyMessage = funnyMessageIndex !== null ? FUNNY_MESSAGES[funnyMessageIndex] : null
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -44,6 +81,7 @@ function App() {
             <div className="flex flex-col items-center gap-4 text-center text-muted-foreground">
               <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <p className="text-sm font-medium uppercase tracking-wide">Loading content…</p>
+              {funnyMessage ? <p className="text-xs text-muted-foreground/80">{funnyMessage}</p> : null}
             </div>
           </section>
         ) : null}
@@ -56,7 +94,7 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
           >
-            <div className="mx-auto grid max-w-[110rem] grid-cols-1 items-center gap-14 px-8 md:px-16 md:grid-cols-2">
+            <div className="mx-auto grid max-w-screen-2xl grid-cols-1 md:grid-cols-2 items-center justify-center gap-14 px-8 md:px-16">
               <div>
                 <p className="text-sm text-muted-foreground">{"hello, I'm"}</p>
                 <h1 className="text-balance text-4xl font-semibold leading-tight sm:text-5xl">
@@ -91,7 +129,7 @@ function App() {
                 </div>
               </div>
 
-              <div className="mx-auto max-w-sm">
+              <div className="mx-auto max-w-sm md:ml-auto md:mr-0 md:justify-self-end">
                 <img
                   src={resolveMediaUrl(hero.image, "/andrian-man.png")}
                   alt="Friendly illustration of Andrian holding a drink and waving"
@@ -112,12 +150,18 @@ function App() {
           </div>
         ) : null}
 
-        {!isLoading && utilities.enabled ? (
-          <div className="about-animated-bg">
-            <ScrollReveal>
-              <GamesSection section={utilities} />
-            </ScrollReveal>
-          </div>
+        {utilities.enabled ? (
+          isLoading ? (
+            <div className="about-animated-bg">
+              <GamesSectionSkeleton />
+            </div>
+          ) : (
+            <div className="about-animated-bg">
+              <ScrollReveal>
+                <GamesSection section={utilities} />
+              </ScrollReveal>
+            </div>
+          )
         ) : null}
 
         {!isLoading && experience.enabled ? (
@@ -137,12 +181,18 @@ function App() {
           </section>
         ) : null}
 
-        {!isLoading && portfolio.enabled ? (
-          <div className="about-animated-bg">
-            <ScrollReveal>
-              <PortfolioSection section={portfolio} />
-            </ScrollReveal>
-          </div>
+        {portfolio.enabled ? (
+          isLoading ? (
+            <div className="about-animated-bg">
+              <PortfolioSectionSkeleton />
+            </div>
+          ) : (
+            <div className="about-animated-bg">
+              <ScrollReveal>
+                <PortfolioSection section={portfolio} />
+              </ScrollReveal>
+            </div>
+          )
         ) : null}
 
         {!isLoading && contact.enabled ? (
