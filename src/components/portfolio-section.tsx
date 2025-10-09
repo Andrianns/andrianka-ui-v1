@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import ScrollReveal from '@/components/scroll-reveal'
 import { Button } from '@/components/ui/button'
 import type { CardsSection, CardItem } from '@/lib/cms'
+import { resolveMediaUrl } from '@/lib/cms'
 import { cn } from '@/lib/utils'
 
 type PortfolioSectionProps = {
@@ -23,6 +24,14 @@ type Project = {
 
 const PROJECT_PLACEHOLDER_IMAGE = '/placeholder.svg?height=160&width=280&query=project'
 
+const normalizeUrl = (value?: string | null): string | undefined => {
+  if (!value) return undefined
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
 const buildProjects = (items: CardItem[]): Project[] =>
   items.map((item, index) => {
     const technologies = item.tag
@@ -32,17 +41,15 @@ const buildProjects = (items: CardItem[]): Project[] =>
           .filter(Boolean)
       : []
 
-    let href: string | undefined
-    const linkMatch = item.description.match(/https?:\/\/[^\s)]+/)
-    if (linkMatch) {
-      href = linkMatch[0]
-    }
+    const fallbackLinkMatch = item.description.match(/https?:\/\/[\S)]+/)
+    const href = normalizeUrl(item.url ?? fallbackLinkMatch?.[0])
 
     return {
       id: item.id ?? `project-${index}`,
       title: item.title,
       description: item.description,
-      image: item.imageUrl ?? PROJECT_PLACEHOLDER_IMAGE,
+      image:
+        resolveMediaUrl(item.image, item.imageUrl ?? PROJECT_PLACEHOLDER_IMAGE) ?? PROJECT_PLACEHOLDER_IMAGE,
       href,
       technologies,
       tag: item.tag ?? null,
@@ -130,6 +137,14 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
 
   const closeProjectModal = () => setActiveProject(null)
 
+  const openProjectUrl = () => {
+    if (!activeProject?.href) return
+    const url = activeProject.href
+    if (typeof window !== 'undefined') {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
   return (
     <section id="portfolio" className="py-16">
       <ScrollReveal>
@@ -216,10 +231,10 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               transition={{ type: 'spring', stiffness: 220, damping: 24 }}
-              className="relative flex h-[min(90vh,900px)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-border/60 bg-card text-card-foreground shadow-2xl"
+              className="relative flex w-full max-w-[92vw] sm:max-w-3xl lg:max-w-5xl max-h-[82vh] flex-col overflow-hidden rounded-3xl border border-border/60 bg-card text-card-foreground shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border/60 px-8 py-6">
+              <header className="flex flex-wrap items-start justify-between gap-4 border-b border-border/60 px-6 py-5 sm:px-8">
                 <div>
                   <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">Featured project</p>
                   <h3 className="mt-1 text-2xl font-semibold md:text-3xl">{activeProject.title}</h3>
@@ -237,25 +252,26 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
                 </Button>
               </header>
 
-              <div className="flex-1 overflow-y-auto px-8 pb-8 pt-6">
-                <div className="grid gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+              <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5 sm:px-8">
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
                   <div className="space-y-4">
-                    <div className="overflow-hidden rounded-2xl border border-border/60">
+                    <div className="overflow-hidden rounded-2xl border border-border/60 aspect-[4/3] max-h-[42vh]">
                       <img src={activeProject.image} alt={activeProject.title} className="h-full w-full object-cover" />
                     </div>
-                    {activeProject.href ? (
-                      <Button asChild className="w-full rounded-full">
-                        <a href={activeProject.href} target="_blank" rel="noreferrer">
-                          View project <ExternalLink className="ml-2 h-4 w-4" />
-                        </a>
-                      </Button>
-                    ) : null}
                   </div>
 
                   <div className="space-y-6">
                     {activeProject.technologies.length ? (
                       <div className="space-y-2">
-                        <h4 className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">Stack</h4>
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <h4 className="text-sm font-semibold uppercase tracking-[0.3em] text-muted-foreground">Stack</h4>
+                          {activeProject.href ? (
+                            <Button type="button" variant="outline" className="rounded-full" onClick={openProjectUrl}>
+                              Visit project
+                              <ExternalLink className="ml-2 h-4 w-4" />
+                            </Button>
+                          ) : null}
+                        </div>
                         <div className="flex flex-wrap gap-2">
                           {activeProject.technologies.map((tech) => (
                             <span
@@ -266,6 +282,13 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
                             </span>
                           ))}
                         </div>
+                      </div>
+                    ) : activeProject.href ? (
+                      <div className="flex justify-end">
+                        <Button type="button" variant="outline" className="rounded-full" onClick={openProjectUrl}>
+                          Visit project
+                          <ExternalLink className="ml-2 h-4 w-4" />
+                        </Button>
                       </div>
                     ) : null}
 

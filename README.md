@@ -22,6 +22,15 @@ Continue building your app on:
 
 **[https://v0.app/chat/projects/PY6gAtqPJkQ](https://v0.app/chat/projects/PY6gAtqPJkQ)**
 
+## Environment variables
+
+Copy `.env.example` to `.env` (or `.env.local`) and adjust the values to match your CMS deployment. The application expects the following keys:
+
+- `VITE_CMS_API_URL`
+- `VITE_CMS_DASHBOARD_URL`
+- `VITE_CMS_LOGIN_URL`
+- `VITE_CMS_NOTIFICATION_DURATION`
+
 ## How It Works
 
 1. Create and modify your project using [v0.app](https://v0.app)

@@ -15,6 +15,7 @@ import { TypingText } from "@/components/ui/typing-text"
 import { useCmsContent } from "@/hooks/use-cms-content"
 import { useCmsSettings } from "@/hooks/use-cms-settings"
 import { motion } from "framer-motion"
+import { resolveMediaUrl } from "@/lib/cms"
 
 function App() {
   const navigate = useNavigate()
@@ -92,7 +93,7 @@ function App() {
 
               <div className="mx-auto max-w-sm">
                 <img
-                  src="/andrian-man.png"
+                  src={resolveMediaUrl(hero.image, "/andrian-man.png")}
                   alt="Friendly illustration of Andrian holding a drink and waving"
                   width={480}
                   height={520}
@@ -156,7 +157,7 @@ function App() {
                   </CardHeader>
                   <CardContent className="space-y-6 px-10 pb-12">
                     <p className="max-w-prose text-lg text-muted-foreground">{contact.blurb}</p>
-                    <ContactForm />
+                    <ContactForm apiUrl={settings.apiUrl} />
                   </CardContent>
                 </Card>
               </div>

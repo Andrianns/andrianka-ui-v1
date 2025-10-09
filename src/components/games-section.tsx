@@ -5,6 +5,7 @@ import { X } from 'lucide-react'
 import ScrollReveal from '@/components/scroll-reveal'
 import { Button } from '@/components/ui/button'
 import type { CardsSection, CardItem } from '@/lib/cms'
+import { resolveMediaUrl } from '@/lib/cms'
 import { cn } from '@/lib/utils'
 
 type PlaygroundId = 'chess' | 'calculator' | 'sudoku' | 'pomodoro' | 'sketch'
@@ -74,6 +75,11 @@ const buildPlaygroundItems = (items: CardItem[]): PlaygroundItem[] =>
     const interactiveId = isPlaygroundId(item.id) ? item.id : undefined
     const meta = interactiveId ? INTERACTIVE_META[interactiveId] : undefined
     const category = deriveCategory(item.tag, meta?.defaultCategory ?? 'Utility')
+    const previewSource =
+      resolveMediaUrl(item.image, item.imageUrl ?? meta?.preview ?? CARD_PLACEHOLDER_IMAGE) ??
+      meta?.preview ??
+      CARD_PLACEHOLDER_IMAGE
+
     return {
       id: item.id ?? `tool-${index}`,
       interactiveId,
@@ -81,7 +87,7 @@ const buildPlaygroundItems = (items: CardItem[]): PlaygroundItem[] =>
       category,
       summary: deriveSummary(item.description, meta?.summary),
       description: item.description,
-      preview: item.imageUrl ?? meta?.preview ?? CARD_PLACEHOLDER_IMAGE,
+      preview: previewSource,
       tag: item.tag ?? null,
     }
   })
@@ -171,10 +177,10 @@ function PlaygroundModal({ item, onClose }: PlaygroundModalProps) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 220, damping: 24 }}
-        className="relative flex h-[min(90vh,900px)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-border/60 bg-card text-card-foreground shadow-2xl"
+  className="relative flex w-full max-w-[92vw] sm:max-w-3xl lg:max-w-5xl max-h-[82vh] flex-col overflow-hidden rounded-3xl border border-border/60 bg-card text-card-foreground shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <header className="flex items-start justify-between gap-4 border-b border-border/60 px-8 py-6">
+  <header className="flex items-start justify-between gap-4 border-b border-border/60 px-6 py-5 sm:px-8">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
               {(item.tag ?? item.category).toUpperCase()}
@@ -193,7 +199,7 @@ function PlaygroundModal({ item, onClose }: PlaygroundModalProps) {
             <X className="h-4 w-4" />
           </Button>
         </header>
-        <div className="flex-1 overflow-y-auto px-8 pb-8 pt-6">
+  <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5 sm:px-8">
           {item.interactiveId ? renderPlayground(item.interactiveId) : null}
         </div>
       </motion.div>

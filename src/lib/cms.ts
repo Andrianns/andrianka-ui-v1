@@ -1,16 +1,26 @@
 export type SectionToggle = { enabled: boolean }
 
+export type MediaResource = {
+  id: number
+  url: string
+  fileName: string
+  mimeType: string
+  size: number
+}
+
 export type HeroSection = SectionToggle & {
   title: string
   subtitle: string
   ctaLabel: string
   ctaHref: string
+  image?: MediaResource | null
 }
 
 export type AboutSection = SectionToggle & {
   title: string
   description: string
   bullets: string[]
+  image?: MediaResource | null
 }
 
 export type CardItem = {
@@ -19,6 +29,8 @@ export type CardItem = {
   description: string
   tag?: string
   imageUrl?: string
+  image?: MediaResource | null
+  url?: string
 }
 
 export type CardsSection = SectionToggle & {
@@ -146,7 +158,43 @@ export const DEFAULT_CONTENT: CmsContent = {
     enabled: true,
     title: "Games & Utilities",
     subtitle: "Hands-on tools and play spaces I tinker with during creative breaks.",
-    items: [],
+    items: [
+      {
+        id: "chess",
+        title: "Chess Lab",
+        description: "Play a full 8x8 chess match with move validation and a clean modern board.",
+        tag: "GAME",
+        imageUrl: "/game-chess-lab.jpg",
+      },
+      {
+        id: "calculator",
+        title: "Quick Calculator",
+        description: "Evaluate complex expressions with percentages, memory, and responsive keypad actions.",
+        tag: "UTILITY",
+        imageUrl: "/utility-quick-calculator.jpg",
+      },
+      {
+        id: "sudoku",
+        title: "Sudoku Studio",
+        description: "Fill the grid with digits 1-9 without repeats across rows, columns, or blocks.",
+        tag: "GAME",
+        imageUrl: "/game-sudoku-studio.jpg",
+      },
+      {
+        id: "pomodoro",
+        title: "Pomodoro Timer",
+        description: "Stay on track with alternating focus and break intervals plus quick mode toggles.",
+        tag: "UTILITY",
+        imageUrl: "/utility-pomodoro-timer.jpg",
+      },
+      {
+        id: "sketch",
+        title: "Pixel Sketch",
+        description: "Doodle on a retro Etch-a-Sketch inspired canvas with erase and fill tools.",
+        tag: "UTILITY",
+        imageUrl: "/utility-pixel-sketch.jpg",
+      },
+    ],
     showViewAll: true,
     viewAllLabel: "Show all 5 tools",
   },
@@ -154,7 +202,48 @@ export const DEFAULT_CONTENT: CmsContent = {
     enabled: true,
     title: "Portfolio",
     subtitle: "A few projects I've worked on recently.",
-    items: [],
+    items: [
+      {
+        id: "calendar-interface",
+        title: "Calendar Interface",
+        description: "Scheduling dashboard concept featuring analytics and quick actions for distributed teams.",
+        tag: "React",
+        imageUrl: "/calendar-interface-mockup.jpg",
+        url: "https://andrian.dev/projects/calendar-interface",
+      },
+      {
+        id: "recipe-cards",
+        title: "Recipe Cards",
+        description: "Responsive recipe catalog with playful illustrations, filtering, and chef notes for culinary hobbyists.",
+        tag: "Next.js",
+        imageUrl: "/recipe-cards-mockup.jpg",
+        url: "https://andrian.dev/projects/recipe-cards",
+      },
+      {
+        id: "travel-map",
+        title: "Travel Map",
+        description: "Interactive travel planner with map overlays, saved journeys, and collaborative itineraries.",
+        tag: "Mapbox",
+        imageUrl: "/travel-map-mockup.jpg",
+        url: "https://andrian.dev/projects/travel-map",
+      },
+      {
+        id: "fitness-dashboard",
+        title: "Fitness Dashboard",
+        description: "Analytics dashboard visualising workouts, recovery insights, and personalised recommendations.",
+        tag: "Vite",
+        imageUrl: "/fitness-dashboard-mockup.jpg",
+        url: "https://andrian.dev/projects/fitness-dashboard",
+      },
+      {
+        id: "photo-gallery",
+        title: "Photo Gallery",
+        description: "Minimalist layout highlighting high-resolution imagery with lightbox browsing and metadata callouts.",
+        tag: "shadcn/ui",
+        imageUrl: "/photo-gallery-mockup.jpg",
+        url: "https://andrian.dev/projects/photo-gallery",
+      },
+    ],
     showViewAll: true,
     viewAllLabel: "Show all 5 projects",
   },
@@ -174,6 +263,23 @@ export const DEFAULT_SETTINGS: CmsSettings = {
 
 const API_BASE = import.meta.env?.VITE_CMS_API_URL ?? "http://localhost:3000/api"
 const SETTINGS_EVENT = "cms:settings-updated"
+
+export function resolveMediaUrl(media?: MediaResource | null, fallback?: string): string | undefined {
+  if (!media?.url) {
+    return fallback
+  }
+
+  if (/^https?:\/\//i.test(media.url)) {
+    return media.url
+  }
+
+  const trimmedBase = API_BASE.replace(/\/$/, "")
+  const normalizedBase = media.url.startsWith("/api/") && trimmedBase.endsWith("/api")
+    ? trimmedBase.slice(0, -4)
+    : trimmedBase
+  const path = media.url.startsWith("/") ? media.url : `/${media.url}`
+  return `${normalizedBase}${path}`
+}
 
 async function request<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`)

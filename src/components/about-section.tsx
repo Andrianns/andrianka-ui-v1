@@ -1,4 +1,4 @@
-import { AboutSection as AboutSectionContent } from "@/lib/cms"
+import { AboutSection as AboutSectionContent, resolveMediaUrl } from "@/lib/cms"
 
 type AboutSectionProps = {
   data: AboutSectionContent
@@ -15,7 +15,11 @@ export default function AboutSection({ data, heroTitle, heroSubtitle }: AboutSec
         <div className="grid gap-6 rounded-3xl border border-border/60 bg-card/70 p-6 shadow-lg lg:grid-cols-[minmax(0,0.48fr)_minmax(0,1.02fr)] lg:items-center lg:gap-10 lg:p-8">
           <div className="pl-30 flex flex-col items-center gap-4 text-center lg:items-start lg:text-left">
             <div className="w-full max-w-[11rem] overflow-hidden rounded-3xl border border-border/60 shadow-md">
-              <img src="/diverse-profile-avatars2.png" alt={`Portrait of ${heroTitle}`} className="aspect-square w-full object-cover" />
+              <img
+                src={resolveMediaUrl(data.image, "/diverse-profile-avatars2.png")}
+                alt={`Portrait of ${heroTitle}`}
+                className="aspect-square w-full object-cover"
+              />
             </div>
             <div className="space-y-1.5">
               <p className="text-[0.7rem] uppercase tracking-[0.25em] text-muted-foreground">{data.title}</p>
