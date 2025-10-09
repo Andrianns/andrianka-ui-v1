@@ -272,6 +272,22 @@ export const DEFAULT_SETTINGS: CmsSettings = {
   notificationDuration: Number.parseInt(import.meta.env?.VITE_CMS_NOTIFICATION_DURATION ?? "1500", 10) || 1500,
 }
 
+const isAbsoluteUrlString = (value: string) => /^https?:\/\//i.test(value)
+const isLikelyLocal = (value: string) => /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:?\d+)?/i.test(value)
+
+const mergeSettings = (partial?: Partial<CmsSettings> | null): CmsSettings => {
+  const merged: CmsSettings = {
+    ...DEFAULT_SETTINGS,
+    ...(partial ?? {}),
+  }
+
+  if (!merged.apiUrl || (import.meta.env?.PROD && (!isAbsoluteUrlString(merged.apiUrl) || isLikelyLocal(merged.apiUrl)))) {
+    merged.apiUrl = DEFAULT_API_URL
+  }
+
+  return merged
+}
+
 const API_BASE = DEFAULT_API_URL
 const SETTINGS_EVENT = "cms:settings-updated"
 
@@ -355,7 +371,7 @@ export async function loadContent(): Promise<LoadContentResult> {
 export async function loadSettings(): Promise<LoadSettingsResult> {
   try {
     const settings = await request<CmsSettings>("/settings")
-    return { settings, error: null }
+    return { settings: mergeSettings(settings), error: null }
   } catch (error) {
     console.error("Failed to load site settings", error)
     return {
@@ -385,7 +401,7 @@ export function subscribeToCmsSettings(callback: (value: CmsSettings) => void) {
 
   const handleCustomEvent = (event: Event) => {
     const detail = (event as CustomEvent<CmsSettings>).detail
-    if (detail) callback(detail)
+    if (detail) callback(mergeSettings(detail))
   }
 
   window.addEventListener(SETTINGS_EVENT, handleCustomEvent)
