@@ -169,8 +169,10 @@ function App() {
             <ScrollReveal>
               <div className="mx-auto max-w-[110rem] px-8 md:px-16">
                 <Card className="gap-4 rounded-2xl border-border/60 bg-card/90 shadow-xl">
-                  <CardHeader className="px-10 pt-10 pb-4">
-                    <CardTitle className="text-3xl font-semibold md:text-4xl">{experience.title}</CardTitle>
+                  <CardHeader className="px-6 pt-10 pb-4 sm:px-12 sm:pb-6 ml-[3rem]">
+                    <CardTitle className="text-3xl font-semibold md:text-4xl">
+                      {experience.title}
+                    </CardTitle>
                   </CardHeader>
                   <CardContent className="px-6 pb-10 sm:px-6">
                     <ExperienceSection section={experience} />
