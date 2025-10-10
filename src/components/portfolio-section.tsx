@@ -1,5 +1,5 @@
 import { ExternalLink, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 
 import ScrollReveal from '@/components/scroll-reveal'
@@ -114,14 +114,38 @@ function ProjectCard({ project, className, onClick, compact = false }: ProjectCa
 
 export default function PortfolioSection({ section }: PortfolioSectionProps) {
   const projects = useMemo(() => buildProjects(section.items ?? []), [section.items])
-  const marqueeItems = useMemo(() => (projects.length ? [...projects, ...projects] : []), [projects])
   const [showAll, setShowAll] = useState(false)
   const [activeProject, setActiveProject] = useState<Project | null>(null)
+  const [isOverflowing, setIsOverflowing] = useState(false)
+  const [trackEl, setTrackEl] = useState<HTMLDivElement | null>(null)
+  const [containerEl, setContainer] = useState<HTMLDivElement | null>(null)
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    setContainer(node)
+  }, [])
   const heading = section.title ?? 'Portfolio'
   const description = section.subtitle ?? "A few projects I've worked on recently."
   const totalProjects = projects.length
-  const ctaLabel = section.viewAllLabel ?? `Show all ${totalProjects} projects`
+  const ctaLabel = useMemo(() => {
+    const fallback = totalProjects === 1 ? 'View project' : `Show all ${totalProjects} projects`
+    if (!section.viewAllLabel) return fallback
+    if (section.viewAllLabel.includes('{count}')) {
+      return section.viewAllLabel.replace('{count}', String(totalProjects))
+    }
+    if (/\d+/.test(section.viewAllLabel)) {
+      return section.viewAllLabel.replace(/\d+/g, String(totalProjects))
+    }
+    return section.viewAllLabel
+  }, [section.viewAllLabel, totalProjects])
   const hasProjects = totalProjects > 0
+  const shouldEnableMarquee = !showAll && isOverflowing && projects.length > 1
+  const marqueeItems = useMemo(() => {
+    if (!shouldEnableMarquee) return projects
+    return projects.length ? [...projects, ...projects] : []
+  }, [projects, shouldEnableMarquee])
+
+  const trackRef = useCallback((node: HTMLDivElement | null) => {
+    setTrackEl(node)
+  }, [])
 
   useEffect(() => {
     if (!activeProject) return
@@ -134,6 +158,49 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [activeProject])
+
+  useEffect(() => {
+    // Re-compute overflow to decide when to activate marquee or show the CTA
+    if (!containerEl || !trackEl) return
+
+    const measure = () => {
+      if (projects.length <= 1) {
+        setIsOverflowing(false)
+        return
+      }
+
+      const containerWidth = containerEl.clientWidth
+      const trackWidth = trackEl.scrollWidth
+      setIsOverflowing(trackWidth > containerWidth + 1)
+    }
+
+    if (typeof window === 'undefined' || typeof window.ResizeObserver === 'undefined') {
+      measure()
+      return
+    }
+
+    const resizeObserver = new window.ResizeObserver(() => {
+      measure()
+    })
+
+    measure()
+    resizeObserver.observe(containerEl)
+    resizeObserver.observe(trackEl)
+
+    return () => resizeObserver.disconnect()
+  }, [containerEl, trackEl, projects])
+
+  useEffect(() => {
+    if (!isOverflowing && showAll) {
+      setShowAll(false)
+    }
+  }, [isOverflowing, showAll])
+
+  useEffect(() => {
+    if (projects.length <= 1 && showAll) {
+      setShowAll(false)
+    }
+  }, [projects.length, showAll])
 
   const closeProjectModal = () => setActiveProject(null)
 
@@ -182,13 +249,22 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
               exit={{ opacity: 0, y: -24 }}
               transition={{ duration: 0.35, ease: 'easeInOut' }}
             >
-              <div className="marquee">
-                <div className="marquee-track">
+              <div
+                ref={containerRef}
+                className={cn(shouldEnableMarquee ? 'marquee overflow-hidden' : 'overflow-visible')}
+              >
+                <div
+                  ref={trackRef}
+                  className={cn(
+                    'flex gap-6',
+                    shouldEnableMarquee ? 'marquee-track' : 'flex-wrap justify-center md:justify-start'
+                  )}
+                >
                   {marqueeItems.map((project, index) => (
                     <ProjectCard
                       key={`${project.id}-${index}`}
                       project={project}
-                      className="w-[320px] shrink-0"
+                      className={cn('shrink-0', shouldEnableMarquee ? 'w-[320px]' : 'w-full sm:w-[320px] md:w-[360px]')}
                       compact
                       onClick={() => setActiveProject(project)}
                     />
@@ -199,7 +275,7 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
           )}
         </AnimatePresence>
 
-        {hasProjects ? (
+        {hasProjects && isOverflowing ? (
           <div className="mt-8 flex justify-center">
             <Button
               type="button"
@@ -211,7 +287,9 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
             </Button>
           </div>
         ) : (
-          <p className="mt-6 text-center text-sm text-muted-foreground">Projects coming soon.</p>
+          !hasProjects ? (
+            <p className="mt-6 text-center text-sm text-muted-foreground">Projects coming soon.</p>
+          ) : null
         )}
       </div>
 
