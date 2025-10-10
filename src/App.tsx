@@ -33,6 +33,9 @@ function App() {
   const isLoading = isContentLoading || isSettingsLoading
   const { hero, about, experience, utilities, portfolio, contact } = content
   const [funnyMessageIndex, setFunnyMessageIndex] = useState<number | null>(null)
+  const resolvedCvMediaUrl = resolveMediaUrl(about.cvDocument)
+  const cvDownloadUrl = resolvedCvMediaUrl ?? "/andrian-cv.pdf"
+  const isDynamicCvAvailable = Boolean(resolvedCvMediaUrl)
 
   useEffect(() => {
     if (!isSettingsLoading && settingsError) {
@@ -121,11 +124,14 @@ function App() {
                       {hero.ctaLabel || 'Contact'}
                     </Button>
                   </a>
-                  <a href="/andrian-cv.pdf" download>
-                    <Button variant="secondary" className="rounded-full">
+                  <a href={cvDownloadUrl} download>
+                    <Button variant="secondary" className="rounded-full" title={isDynamicCvAvailable ? undefined : "Using fallback CV copy"}>
                       DOWNLOAD CV
                     </Button>
                   </a>
+                  {!isDynamicCvAvailable ? (
+                    <span className="text-xs text-muted-foreground/70">Live CV not yet uploaded — serving cached file.</span>
+                  ) : null}
                 </div>
               </div>
 

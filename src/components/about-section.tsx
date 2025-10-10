@@ -1,4 +1,5 @@
 import { AboutSection as AboutSectionContent, resolveMediaUrl } from "@/lib/cms"
+import { Button } from "@/components/ui/button"
 
 type AboutSectionProps = {
   data: AboutSectionContent
@@ -41,6 +42,20 @@ export default function AboutSection({ data, heroTitle, heroSubtitle }: AboutSec
                   </li>
                 ))}
               </ul>
+            ) : null}
+            {data.cvDocument ? (
+              <div className="pt-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    const url = resolveMediaUrl(data.cvDocument)
+                    if (!url) return
+                    window.open(url, "_blank", "noreferrer")
+                  }}
+                >
+                  Download CV
+                </Button>
+              </div>
             ) : null}
           </div>
         </div>

@@ -21,6 +21,7 @@ export type AboutSection = SectionToggle & {
   description: string
   bullets: string[]
   image?: MediaResource | null
+  cvDocument?: MediaResource | null
 }
 
 export type CardItem = {
@@ -93,6 +94,7 @@ export const DEFAULT_CONTENT: CmsContent = {
       "Automated schedulers, monitoring dashboards, and data workflows.",
       "Delivered low-code field reporting tools.",
     ],
+    cvDocument: undefined,
   },
   experience: {
     enabled: true,
