@@ -170,8 +170,17 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
       }
 
       const containerWidth = containerEl.clientWidth
-      const trackWidth = trackEl.scrollWidth
-      setIsOverflowing(trackWidth > containerWidth + 1)
+      const children = Array.from(trackEl.children) as HTMLElement[]
+      const style = window.getComputedStyle(trackEl)
+      const gapValue = style.gap || style.columnGap || style.rowGap || '0'
+      const gap = parseFloat(gapValue) || 0
+      const totalWidth = children.reduce((acc, child, index) => {
+        const childWidth = child.getBoundingClientRect().width
+        if (!childWidth) return acc
+        return acc + childWidth + (index === 0 ? 0 : gap)
+      }, 0)
+
+      setIsOverflowing(totalWidth > containerWidth + 1)
     }
 
     if (typeof window === 'undefined' || typeof window.ResizeObserver === 'undefined') {
@@ -180,10 +189,10 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
     }
 
     const resizeObserver = new window.ResizeObserver(() => {
-      measure()
+      window.requestAnimationFrame(measure)
     })
 
-    measure()
+    window.requestAnimationFrame(measure)
     resizeObserver.observe(containerEl)
     resizeObserver.observe(trackEl)
 
