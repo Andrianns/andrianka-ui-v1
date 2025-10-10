@@ -256,16 +256,46 @@ export const DEFAULT_CONTENT: CmsContent = {
   },
 }
 
-const resolveDefaultApiUrl = () => {
-  const configured = import.meta.env?.VITE_CMS_API_URL?.trim()
+const PRODUCTION_FALLBACK_API_URL = "https://andrian-be-services-v1.vercel.app/api" as const
+
+const sanitizeApiBase = (candidate?: string | null): string | null => {
+  if (!candidate) return null
+  const trimmed = candidate.trim()
+  if (!trimmed) return null
+
+  const valueWithProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`
+
+  try {
+    const url = new URL(valueWithProtocol)
+    const normalizedPath = url.pathname.replace(/\/+$/, "")
+    const finalPath = normalizedPath && normalizedPath !== "/" ? normalizedPath : ""
+    return `${url.origin}${finalPath}`
+  } catch (error) {
+    console.warn("cms: invalid api url provided", candidate, error)
+    return null
+  }
+}
+
+const resolveConfiguredApiUrl = () => {
+  const configured = sanitizeApiBase(import.meta.env?.VITE_CMS_API_URL)
   if (configured) return configured
   if (import.meta.env?.PROD) {
-    return "https://andrian-be-services-v1.vercel.app/api"
+    return PRODUCTION_FALLBACK_API_URL
   }
   return "http://localhost:3000/api"
 }
 
-export const DEFAULT_API_URL = resolveDefaultApiUrl()
+export const DEFAULT_API_URL = sanitizeApiBase(resolveConfiguredApiUrl()) ?? PRODUCTION_FALLBACK_API_URL
+
+let apiBase = DEFAULT_API_URL
+
+const setApiBase = (candidate?: string | null) => {
+  const sanitized = sanitizeApiBase(candidate)
+  apiBase = sanitized ?? DEFAULT_API_URL
+  return apiBase
+}
+
+const getApiBase = () => apiBase
 
 export const DEFAULT_SETTINGS: CmsSettings = {
   apiUrl: DEFAULT_API_URL,
@@ -283,14 +313,18 @@ const mergeSettings = (partial?: Partial<CmsSettings> | null): CmsSettings => {
     ...(partial ?? {}),
   }
 
-  if (!merged.apiUrl || (import.meta.env?.PROD && (!isAbsoluteUrlString(merged.apiUrl) || isLikelyLocal(merged.apiUrl)))) {
-    merged.apiUrl = DEFAULT_API_URL
-  }
+  const sanitized = sanitizeApiBase(merged.apiUrl)
+  const shouldFallbackToDefault = Boolean(
+    import.meta.env?.PROD && sanitized && isLikelyLocal(sanitized),
+  )
+
+  const finalApiUrl = shouldFallbackToDefault ? DEFAULT_API_URL : sanitized ?? DEFAULT_API_URL
+  merged.apiUrl = finalApiUrl
+  setApiBase(finalApiUrl)
 
   return merged
 }
 
-const API_BASE = DEFAULT_API_URL
 const SETTINGS_EVENT = "cms:settings-updated"
 
 const stripQueryAndHash = (value: string) => value.split(/[?#]/)[0]
@@ -314,30 +348,34 @@ export function resolveMediaUrl(media?: MediaResource | null, fallback?: string)
   }
 
   const normalizedMediaPath = ensureLeadingSlash(stripQueryAndHash(mediaUrl))
+  const trimmedBase = getApiBase().replace(/\/$/, '')
+  const shouldStripApi = normalizedMediaPath.startsWith('/api/') && trimmedBase.endsWith('/api')
+  const normalizedBase = shouldStripApi ? trimmedBase.slice(0, -4) : trimmedBase
 
   if (fallbackUrl) {
     if (isAbsoluteUrl(fallbackUrl)) {
-      const fallbackPath = stripQueryAndHash(fallbackUrl)
-      if (fallbackPath.endsWith(normalizedMediaPath)) {
-        return fallbackUrl
+      try {
+        const fallback = new URL(fallbackUrl)
+        const fallbackPath = stripQueryAndHash(fallback.pathname)
+        if (fallbackPath === normalizedMediaPath) {
+          return `${normalizedBase}${normalizedMediaPath}`
+        }
+      } catch (error) {
+        console.warn("cms: failed to parse fallback media url", fallbackUrl, error)
       }
     } else {
       const normalizedFallbackPath = ensureLeadingSlash(stripQueryAndHash(fallbackUrl))
       if (normalizedFallbackPath === normalizedMediaPath) {
-        return fallbackUrl
+        return `${normalizedBase}${normalizedMediaPath}`
       }
     }
   }
-
-  const trimmedBase = API_BASE.replace(/\/$/, '')
-  const shouldStripApi = normalizedMediaPath.startsWith('/api/') && trimmedBase.endsWith('/api')
-  const normalizedBase = shouldStripApi ? trimmedBase.slice(0, -4) : trimmedBase
 
   return `${normalizedBase}${normalizedMediaPath}`
 }
 
 async function request<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`)
+  const res = await fetch(`${getApiBase()}${path}`)
   if (!res.ok) {
     throw new Error(`Request failed with status ${res.status}`)
   }
