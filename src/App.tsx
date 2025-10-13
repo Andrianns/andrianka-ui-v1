@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/toaster"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TypingText } from "@/components/ui/typing-text"
+import ProgressiveImage from "@/components/ui/progressive-image"
 import { useCmsContent } from "@/hooks/use-cms-content"
 import { useCmsSettings } from "@/hooks/use-cms-settings"
 import { motion } from "framer-motion"
@@ -36,6 +37,8 @@ function App() {
   const resolvedCvMediaUrl = resolveMediaUrl(about.cvDocument)
   const cvDownloadUrl = resolvedCvMediaUrl ?? "/andrian-cv.pdf"
   const isDynamicCvAvailable = Boolean(resolvedCvMediaUrl)
+  const heroImagePrimarySrc = resolveMediaUrl(hero.image)
+  const heroFallbackSrc = "/andrian-man.png"
 
   useEffect(() => {
     if (!isSettingsLoading && settingsError) {
@@ -136,8 +139,9 @@ function App() {
               </div>
 
               <div className="mx-auto max-w-sm md:ml-auto md:mr-0 md:justify-self-end">
-                <img
-                  src={resolveMediaUrl(hero.image, "/andrian-man.png")}
+                <ProgressiveImage
+                  primarySrc={heroImagePrimarySrc}
+                  fallbackSrc={heroFallbackSrc}
                   alt="Friendly illustration of Andrian holding a drink and waving"
                   width={480}
                   height={520}
