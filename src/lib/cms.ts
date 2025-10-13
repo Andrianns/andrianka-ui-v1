@@ -331,6 +331,45 @@ const stripQueryAndHash = (value: string) => value.split(/[?#]/)[0]
 const ensureLeadingSlash = (value: string) => (value.startsWith('/') ? value : `/${value}`)
 const isAbsoluteUrl = (value: string) => /^https?:\/\//i.test(value) || value.startsWith('data:')
 
+type UrlParts = {
+  path: string
+  search: string
+  hash: string
+}
+
+const splitUrlParts = (value: string): UrlParts => {
+  let pathEnd = value.length
+  const queryIndex = value.indexOf('?')
+  const hashIndex = value.indexOf('#')
+
+  if (queryIndex !== -1 && hashIndex !== -1) {
+    pathEnd = Math.min(queryIndex, hashIndex)
+  } else if (queryIndex !== -1) {
+    pathEnd = queryIndex
+  } else if (hashIndex !== -1) {
+    pathEnd = hashIndex
+  }
+
+  const path = value.slice(0, pathEnd)
+  const search = queryIndex !== -1 ? value.slice(queryIndex, hashIndex !== -1 ? hashIndex : undefined) : ''
+  const hash = hashIndex !== -1 ? value.slice(hashIndex) : ''
+
+  return { path, search, hash }
+}
+
+const buildSearchAndHash = (parts: UrlParts, media?: MediaResource | null) => {
+  if (parts.search || parts.hash) {
+    return `${parts.search}${parts.hash}`
+  }
+
+  const cacheTokens = [media?.id, media?.size].filter((value) => value !== undefined && value !== null)
+  if (cacheTokens.length === 0) {
+    return ''
+  }
+
+  return `?v=${cacheTokens.join('-')}`
+}
+
 export function resolveMediaUrl(media?: MediaResource | null, fallback?: string): string | undefined {
   const fallbackUrl = fallback?.trim()
 
@@ -347,7 +386,9 @@ export function resolveMediaUrl(media?: MediaResource | null, fallback?: string)
     return mediaUrl
   }
 
-  const normalizedMediaPath = ensureLeadingSlash(stripQueryAndHash(mediaUrl))
+  const mediaParts = splitUrlParts(mediaUrl)
+  const normalizedMediaPath = ensureLeadingSlash(stripQueryAndHash(mediaParts.path))
+  const searchAndHash = buildSearchAndHash(mediaParts, media)
   const trimmedBase = getApiBase().replace(/\/$/, '')
   const shouldStripApi = normalizedMediaPath.startsWith('/api/') && trimmedBase.endsWith('/api')
   const normalizedBase = shouldStripApi ? trimmedBase.slice(0, -4) : trimmedBase
@@ -358,7 +399,7 @@ export function resolveMediaUrl(media?: MediaResource | null, fallback?: string)
         const fallback = new URL(fallbackUrl)
         const fallbackPath = stripQueryAndHash(fallback.pathname)
         if (fallbackPath === normalizedMediaPath) {
-          return `${normalizedBase}${normalizedMediaPath}`
+          return `${normalizedBase}${normalizedMediaPath}${searchAndHash}`
         }
       } catch (error) {
         console.warn("cms: failed to parse fallback media url", fallbackUrl, error)
@@ -366,12 +407,12 @@ export function resolveMediaUrl(media?: MediaResource | null, fallback?: string)
     } else {
       const normalizedFallbackPath = ensureLeadingSlash(stripQueryAndHash(fallbackUrl))
       if (normalizedFallbackPath === normalizedMediaPath) {
-        return `${normalizedBase}${normalizedMediaPath}`
+        return `${normalizedBase}${normalizedMediaPath}${searchAndHash}`
       }
     }
   }
 
-  return `${normalizedBase}${normalizedMediaPath}`
+  return `${normalizedBase}${normalizedMediaPath}${searchAndHash}`
 }
 
 async function request<T>(path: string): Promise<T> {
