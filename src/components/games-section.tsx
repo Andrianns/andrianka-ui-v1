@@ -129,7 +129,8 @@ function PlaygroundCard({ item, onSelect, className }: PlaygroundCardProps) {
         <img
           src={item.preview || CARD_PLACEHOLDER_IMAGE}
           alt={item.title}
-          loading="lazy"
+          loading="eager"
+          decoding="async"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </div>
@@ -177,10 +178,10 @@ function PlaygroundModal({ item, onClose }: PlaygroundModalProps) {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 220, damping: 24 }}
-  className="relative flex w-full max-w-[92vw] sm:max-w-3xl lg:max-w-5xl max-h-[82vh] flex-col overflow-hidden rounded-3xl border border-border/60 bg-card text-card-foreground shadow-2xl"
+        className="relative flex w-full max-w-[92vw] sm:max-w-3xl lg:max-w-5xl max-h-[82vh] flex-col overflow-hidden rounded-3xl border border-border/60 bg-card text-card-foreground shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-  <header className="flex items-start justify-between gap-4 border-b border-border/60 px-6 py-5 sm:px-8">
+        <header className="flex items-start justify-between gap-4 border-b border-border/60 px-6 py-5 sm:px-8">
           <div>
             <p className="text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
               {(item.tag ?? item.category).toUpperCase()}
@@ -199,7 +200,7 @@ function PlaygroundModal({ item, onClose }: PlaygroundModalProps) {
             <X className="h-4 w-4" />
           </Button>
         </header>
-  <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5 sm:px-8">
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-5 sm:px-8">
           {item.interactiveId ? renderPlayground(item.interactiveId) : null}
         </div>
       </motion.div>
@@ -535,8 +536,8 @@ function ChessBoard() {
       ? 'You win! The black king has fallen.'
       : 'You lose. Black captured your king.'
     : turn === 'white'
-    ? 'Your move (White)'
-    : 'Opponent move (Black)'
+      ? 'Your move (White)'
+      : 'Opponent move (Black)'
 
   return (
     <div className="flex flex-col gap-4">
@@ -813,7 +814,7 @@ function PomodoroTimer() {
   const progress = 1 - timeLeft / total
 
   return (
-  <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6">
+    <div className="mx-auto flex w-full max-w-lg flex-col items-center gap-6">
       <div className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-muted/20 px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] text-muted-foreground">
         {mode === 'focus' ? 'Focus' : 'Break'}
       </div>

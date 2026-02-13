@@ -1,3 +1,5 @@
+import cachedCmsData from "@/generated/cached-cms-data.json"
+
 export type SectionToggle = { enabled: boolean }
 
 export type MediaResource = {
@@ -75,8 +77,10 @@ export type CmsSettings = {
   loginUrl: string
   notificationDuration: number
 }
-
-export const DEFAULT_CONTENT: CmsContent = {
+/**
+ * Hardcoded fallback — only used when the cached JSON has null (API was offline during build).
+ */
+export const FALLBACK_CONTENT: CmsContent = {
   hero: {
     enabled: true,
     title: "Andrian Kurnia Aji",
@@ -256,6 +260,14 @@ export const DEFAULT_CONTENT: CmsContent = {
   },
 }
 
+/**
+ * DEFAULT_CONTENT — uses build-time cached data from the API if available,
+ * otherwise falls back to the hardcoded FALLBACK_CONTENT above.
+ * Every Vercel deploy runs `npm run build` which prefetches the latest data.
+ */
+export const DEFAULT_CONTENT: CmsContent =
+  (cachedCmsData?.content as CmsContent | null) ?? FALLBACK_CONTENT
+
 const PRODUCTION_FALLBACK_API_URL = "https://andrian-be-services-v1.vercel.app/api" as const
 
 const sanitizeApiBase = (candidate?: string | null): string | null => {
@@ -297,19 +309,23 @@ const setApiBase = (candidate?: string | null) => {
 
 const getApiBase = () => apiBase
 
-export const DEFAULT_SETTINGS: CmsSettings = {
+const FALLBACK_SETTINGS: CmsSettings = {
   apiUrl: DEFAULT_API_URL,
   cmsUrl: import.meta.env?.VITE_CMS_DASHBOARD_URL ?? "http://localhost:5174/dashboard",
   loginUrl: import.meta.env?.VITE_CMS_LOGIN_URL ?? "http://localhost:5174/login",
   notificationDuration: Number.parseInt(import.meta.env?.VITE_CMS_NOTIFICATION_DURATION ?? "1500", 10) || 1500,
 }
 
+export const DEFAULT_SETTINGS: CmsSettings = cachedCmsData?.settings
+  ? { ...FALLBACK_SETTINGS, ...(cachedCmsData.settings as unknown as Partial<CmsSettings>) }
+  : FALLBACK_SETTINGS
+
 const isAbsoluteUrlString = (value: string) => /^https?:\/\//i.test(value)
 const isLikelyLocal = (value: string) => /^https?:\/\/(localhost|127\.0\.0\.1|0\.0\.0\.0)(:?\d+)?/i.test(value)
 
 const mergeSettings = (partial?: Partial<CmsSettings> | null): CmsSettings => {
   const merged: CmsSettings = {
-    ...DEFAULT_SETTINGS,
+    ...FALLBACK_SETTINGS,
     ...(partial ?? {}),
   }
 

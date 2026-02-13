@@ -36,9 +36,9 @@ const buildProjects = (items: CardItem[]): Project[] =>
   items.map((item, index) => {
     const technologies = item.tag
       ? item.tag
-          .split(',')
-          .map((value) => value.trim())
-          .filter(Boolean)
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean)
       : []
 
     const fallbackLinkMatch = item.description.match(/https?:\/\/[\S)]+/)
@@ -77,7 +77,8 @@ function ProjectCard({ project, className, onClick, compact = false }: ProjectCa
         <img
           src={project.image || PROJECT_PLACEHOLDER_IMAGE}
           alt={project.title}
-          loading="lazy"
+          loading="eager"
+          decoding="async"
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
       </div>
@@ -266,7 +267,7 @@ export default function PortfolioSection({ section }: PortfolioSectionProps) {
                   ref={trackRef}
                   className={cn(
                     'flex gap-6',
-                    shouldEnableMarquee ? 'marquee-track' : 'flex-wrap justify-center md:justify-start'
+                    shouldEnableMarquee ? 'marquee-track-reverse' : 'flex-wrap justify-center md:justify-start'
                   )}
                 >
                   {marqueeItems.map((project, index) => (

@@ -3,8 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="preconnect" href="https://andrian-be-services-v1.vercel.app" crossorigin />
+    <link rel="dns-prefetch" href="https://andrian-be-services-v1.vercel.app" />
     <link rel="prefetch" href="https://andrian-be-services-v1.vercel.app/api/settings" as="fetch" crossorigin />
     <link rel="prefetch" href="https://andrian-be-services-v1.vercel.app/api/content" as="fetch" crossorigin />
+    <!-- Prefetch hero + first visible media images to warm backend -->
+    <link rel="prefetch" href="https://andrian-be-services-v1.vercel.app/api/media/2" as="image" crossorigin />
+    <link rel="prefetch" href="https://andrian-be-services-v1.vercel.app/api/media/9" as="image" crossorigin />
+    <link rel="prefetch" href="https://andrian-be-services-v1.vercel.app/api/media/14" as="image" crossorigin />
     <link rel="icon" type="image/png" href="/logo-andrian-universe.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Andrian Universe</title>
