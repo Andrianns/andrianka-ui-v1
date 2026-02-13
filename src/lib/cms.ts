@@ -462,8 +462,18 @@ export async function loadSettings(): Promise<LoadSettingsResult> {
   }
 }
 
+export type LoadAllResult = {
+  content: LoadContentResult
+  settings: LoadSettingsResult
+}
+
+export async function loadAll(): Promise<LoadAllResult> {
+  const [content, settings] = await Promise.all([loadContent(), loadSettings()])
+  return { content, settings }
+}
+
 export function subscribeToCmsContent(callback: (value: CmsContent) => void) {
-  if (typeof window === "undefined") return () => {}
+  if (typeof window === "undefined") return () => { }
 
   const handleCustomEvent = (event: Event) => {
     const detail = (event as CustomEvent<CmsContent>).detail
@@ -478,7 +488,7 @@ export function subscribeToCmsContent(callback: (value: CmsContent) => void) {
 }
 
 export function subscribeToCmsSettings(callback: (value: CmsSettings) => void) {
-  if (typeof window === "undefined") return () => {}
+  if (typeof window === "undefined") return () => { }
 
   const handleCustomEvent = (event: Event) => {
     const detail = (event as CustomEvent<CmsSettings>).detail

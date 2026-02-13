@@ -134,9 +134,8 @@ export default function SiteHeader({ content, settings, isLoading = false, setti
     >
       {/* background overlay */}
       <div
-        className={`absolute inset-0 -z-10 transition-colors duration-500 ${
-          dark ? "bg-slate-900/95" : "bg-white/85"
-        }`}
+        className={`absolute inset-0 -z-10 transition-colors duration-500 ${dark ? "bg-slate-900/95" : "bg-white/85"
+          }`}
       />
 
       <div className="relative mx-auto flex max-w-[110rem] items-center justify-between px-6 py-3 md:px-10">
@@ -144,7 +143,7 @@ export default function SiteHeader({ content, settings, isLoading = false, setti
         <a href="#home" className="flex items-center gap-2">
           <span className="sr-only">Andrian Universe</span>
           <img
-            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-RzarUJvxReRo3tuMn3e8YSsD1d7p3o.png"
+            src="/logo-andrian-universe.png"
             alt="Andrian Universe logo"
             width={80}
             height={80}

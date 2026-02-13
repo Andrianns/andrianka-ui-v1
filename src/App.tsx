@@ -1,39 +1,28 @@
-import { useEffect, useState } from "react"
+import React, { Suspense, useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import SiteHeader from "@/components/site-header"
 import SiteFooter from "@/components/site-footer"
 import AboutSection from "@/components/about-section"
 import ExperienceSection from "@/components/experience-section"
 import ContactForm from "@/components/contact-form"
-import PortfolioSection from "@/components/portfolio-section"
-import GamesSection from "@/components/games-section"
 import ScrollReveal from "@/components/scroll-reveal"
 import { Button } from "@/components/ui/button"
 import { Toaster } from "@/components/ui/toaster"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { TypingText } from "@/components/ui/typing-text"
 import ProgressiveImage from "@/components/ui/progressive-image"
-import { useCmsContent } from "@/hooks/use-cms-content"
-import { useCmsSettings } from "@/hooks/use-cms-settings"
+import { useCmsData } from "@/hooks/use-cms-data"
 import { motion } from "framer-motion"
 import { resolveMediaUrl } from "@/lib/cms"
 import { GamesSectionSkeleton, PortfolioSectionSkeleton } from "@/components/section-skeletons"
 
-const FUNNY_MESSAGES = [
-  "Masih loading... kayak pull request yang nunggu di-approve 💤",
-  "Ngopi dulu aja, Vercel-nya lagi mikir 🤔",
-  "Tenang, backend-nya lagi bangun dari tidur siang ☕",
-  "Ini bukan bug, ini fitur ‘slow suspense’ 🎭",
-  "Server-nya lagi jalan kaki dari Amerika ke Indonesia 🛫",
-]
+const GamesSection = React.lazy(() => import("@/components/games-section"))
+const PortfolioSection = React.lazy(() => import("@/components/portfolio-section"))
 
 function App() {
   const navigate = useNavigate()
-  const { content, isLoading: isContentLoading } = useCmsContent()
-  const { settings, isLoading: isSettingsLoading, error: settingsError } = useCmsSettings()
-  const isLoading = isContentLoading || isSettingsLoading
+  const { content, settings, isLoading, settingsError } = useCmsData()
   const { hero, about, experience, utilities, portfolio, contact } = content
-  const [funnyMessageIndex, setFunnyMessageIndex] = useState<number | null>(null)
   const resolvedCvMediaUrl = resolveMediaUrl(about.cvDocument)
   const cvDownloadUrl = resolvedCvMediaUrl ?? "/andrian-cv.pdf"
   const isDynamicCvAvailable = Boolean(resolvedCvMediaUrl)
@@ -41,37 +30,10 @@ function App() {
   const heroFallbackSrc = "/andrian-man.png"
 
   useEffect(() => {
-    if (!isSettingsLoading && settingsError) {
+    if (!isLoading && settingsError) {
       navigate("/service-down", { replace: true, state: { reason: settingsError.message } })
     }
-  }, [isSettingsLoading, settingsError, navigate])
-
-  useEffect(() => {
-    if (!isLoading) {
-      setFunnyMessageIndex(null)
-      return
-    }
-
-    let intervalId: number | undefined
-    const timeoutId = window.setTimeout(() => {
-      setFunnyMessageIndex(0)
-      intervalId = window.setInterval(() => {
-        setFunnyMessageIndex((prev) => {
-          if (prev === null) return 0
-          return (prev + 1) % FUNNY_MESSAGES.length
-        })
-      }, 4000)
-    }, 5000)
-
-    return () => {
-      window.clearTimeout(timeoutId)
-      if (intervalId) {
-        window.clearInterval(intervalId)
-      }
-    }
-  }, [isLoading])
-
-  const funnyMessage = funnyMessageIndex !== null ? FUNNY_MESSAGES[funnyMessageIndex] : null
+  }, [isLoading, settingsError, navigate])
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -79,20 +41,10 @@ function App() {
         content={content}
         settings={settings}
         isLoading={isLoading}
-        settingsLoading={isSettingsLoading}
+        settingsLoading={isLoading}
       />
       <main>
-        {isLoading ? (
-          <section className="flex min-h-[60vh] items-center justify-center px-8 py-16">
-            <div className="flex flex-col items-center gap-4 text-center text-muted-foreground">
-              <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-              <p className="text-sm font-medium uppercase tracking-wide">Loading content…</p>
-              {funnyMessage ? <p className="text-xs text-muted-foreground/80">{funnyMessage}</p> : null}
-            </div>
-          </section>
-        ) : null}
-
-        {!isLoading && hero.enabled ? (
+        {hero.enabled ? (
           <motion.section
             id="home"
             className="hero-animated-bg border-b py-16 md:py-24"
@@ -152,7 +104,7 @@ function App() {
           </motion.section>
         ) : null}
 
-        {!isLoading && about.enabled ? (
+        {about.enabled ? (
           <div className="about-animated-bg">
             <ScrollReveal>
               <AboutSection data={about} heroTitle={hero.title} heroSubtitle={hero.subtitle} />
@@ -161,20 +113,16 @@ function App() {
         ) : null}
 
         {utilities.enabled ? (
-          isLoading ? (
-            <div className="about-animated-bg">
-              <GamesSectionSkeleton />
-            </div>
-          ) : (
-            <div className="about-animated-bg">
+          <div className="about-animated-bg">
+            <Suspense fallback={<GamesSectionSkeleton />}>
               <ScrollReveal>
                 <GamesSection section={utilities} />
               </ScrollReveal>
-            </div>
-          )
+            </Suspense>
+          </div>
         ) : null}
 
-        {!isLoading && experience.enabled ? (
+        {experience.enabled ? (
           <section id="experience" className="about-animated-bg scroll-mt-24 py-16">
             <ScrollReveal>
               <div className="mx-auto max-w-[110rem] px-8 md:px-16">
@@ -194,20 +142,16 @@ function App() {
         ) : null}
 
         {portfolio.enabled ? (
-          isLoading ? (
-            <div className="about-animated-bg">
-              <PortfolioSectionSkeleton />
-            </div>
-          ) : (
-            <div className="about-animated-bg">
+          <div className="about-animated-bg">
+            <Suspense fallback={<PortfolioSectionSkeleton />}>
               <ScrollReveal>
                 <PortfolioSection section={portfolio} />
               </ScrollReveal>
-            </div>
-          )
+            </Suspense>
+          </div>
         ) : null}
 
-        {!isLoading && contact.enabled ? (
+        {contact.enabled ? (
           <ScrollReveal>
             <section id="contact" aria-labelledby="contact-title" className="about-animated-bg scroll-mt-24 py-16">
               <div className="mx-auto max-w-[110rem] px-8 md:px-16">
